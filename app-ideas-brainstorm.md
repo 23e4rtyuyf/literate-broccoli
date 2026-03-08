@@ -244,6 +244,38 @@ AI coordinates. Humans act. The outcome (a neighbor checked on, a crisis managed
 
 ---
 
+### Security Posture (for Municipal Procurement)
+
+Cities will ask basic security questions even for a small pilot contract. Below is an honest, current-state answer for each category — plus the gap-fill language to use while controls are being built.
+
+| Category | Current State (MVP) | What to Say in Procurement |
+|----------|--------------------|-----------------------------|
+| **Authentication** | Household ID stored in localStorage; no password system yet | "Currently session-based; production deployment will add email magic links or SSO (Okta/Azure AD) per City requirements" |
+| **Encryption in transit** | HTTPS enforced via hosting platform (Vite dev proxy; production via Vercel/Render TLS) | "All traffic encrypted in transit via TLS 1.2+" |
+| **Encryption at rest** | SQLite file on server disk; not encrypted at rest by default | "Database-at-rest encryption in progress; can deploy on PostgreSQL with transparent data encryption (TDE) for City deployment" |
+| **Access control** | Three roles enforced: resident (own data only), block captain (zone data), admin (seed/all) — all enforced in API layer | "Role-based access control (RBAC) implemented: residents, block captains, and administrators have distinct, server-enforced permission scopes" |
+| **Audit logs** | `created_at` timestamps on all records; task claim/complete/flag events timestamped | "Basic event timestamping in place; full audit log (who did what, when, from which IP) can be added prior to production deployment" |
+| **Data retention & deletion** | No self-service deletion yet | "Households can request data deletion via block captain or service operator; automated self-service deletion can be added per City data retention policy" |
+| **Backups** | Not yet configured | "Automated daily backups can be configured on any managed PostgreSQL host (Supabase, RDS, Render) prior to go-live" |
+| **Uptime monitoring** | Not yet configured | "Uptime monitoring via UptimeRobot or Datadog can be added; SLA terms negotiable per contract" |
+| **Vulnerability data sensitivity** | Household medical/mobility data stored in plain text in DB | "Sensitive fields (medical equipment, mobility status) will be encrypted at the column level in production using AES-256 prior to handling real resident data" |
+| **Penetration testing** | Not yet performed | "Third-party pen test can be scoped and completed during onboarding if required by City procurement" |
+
+**Boilerplate language for RFPs and pilots:**
+
+> *CrisisGrid is currently in active development. Core security controls — HTTPS in transit, role-based access control, and event timestamping — are implemented. Additional enterprise controls (SSO, at-rest encryption, audit logging, automated backups, penetration testing) are available and can be configured to meet City-specific requirements during the onboarding engagement. We are happy to complete a vendor security questionnaire.*
+
+**Honest gaps to fix before any real City deployment (in priority order):**
+1. Replace localStorage auth with email magic links or SSO
+2. Migrate from SQLite to PostgreSQL with at-rest encryption
+3. Add a full audit log table (`user_id`, `action`, `target`, `ip`, `timestamp`)
+4. Add self-service household data deletion endpoint
+5. Configure automated database backups
+6. Add uptime monitoring with alert routing
+7. Commission a basic penetration test (many firms offer $2–5K entry-level assessments)
+
+---
+
 ## Idea 4: **SkillAttest** — Human-Verified Professional Skills Marketplace
 
 ### What it is
