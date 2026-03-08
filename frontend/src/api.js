@@ -13,6 +13,7 @@ async function req(path, opts = {}) {
 }
 
 const post = (path, body) => req(path, { method: 'POST', body: JSON.stringify(body) })
+const put = (path, body = {}) => req(path, { method: 'PUT', body: JSON.stringify(body) })
 
 export const api = {
   health: () => req('/health'),
@@ -43,6 +44,22 @@ export const api = {
 
   // Debrief
   getDebrief: (crisisId) => req(`/crisis/${crisisId}/debrief`),
+
+  // Messages
+  sendMessage: (data) => post('/messages', data),
+  broadcastToZone: (data) => post('/messages/broadcast', data),
+  getInbox: (householdId) => req(`/messages/inbox/${householdId}`),
+  getSent: (householdId) => req(`/messages/sent/${householdId}`),
+  getUnreadCount: (householdId) => req(`/messages/unread/${householdId}`),
+  markRead: (msgId) => put(`/messages/${msgId}/read`),
+  markAllRead: (householdId) => put(`/messages/read-all/${householdId}`),
+
+  // Captain applications
+  captainApply: (data) => post('/captain-apply', data),
+  getCaptainApplications: (status) =>
+    req(`/captain-applications${status ? `?status=${status}` : ''}`),
+  approveApplication: (id) => put(`/captain-applications/${id}/approve`),
+  denyApplication: (id) => put(`/captain-applications/${id}/deny`),
 
   // Seed
   seed: () => post('/seed', {}),
