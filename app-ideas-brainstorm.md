@@ -86,27 +86,161 @@ A **verified local emergency coordination app** where neighbors, block captains,
 
 Nextdoor is noisy and social. 911 is overloaded. **There is no structured neighborhood-scale crisis coordination tool** — just group texts and Facebook posts.
 
+The insight: emergencies are local before they are regional. The 72-hour window after a major disaster is when neighbor-to-neighbor coordination matters most — and it's exactly when official systems are overwhelmed. CrisisGrid fills that gap with structure, not noise.
+
+---
+
+### The Problem in Detail
+
+When a major storm, wildfire, or grid failure hits:
+
+1. **911 is overloaded** — dispatchers triage; non-life-threatening needs go unanswered for hours or days
+2. **Group texts collapse** — no prioritization, no accountability, no way to track who checked on whom
+3. **Nextdoor/Facebook fill with rumors** — social dynamics take over; actionable coordination drowns in noise
+4. **The most vulnerable are invisible** — elderly neighbors, people with disabilities, non-English speakers, households without cars — nobody has a list
+
+FEMA itself recommends communities prepare for 72 hours of self-reliance. There is no app that helps them actually do it.
+
+---
+
+### How It Works
+
+**Setup phase (before any crisis):**
+
+- Households register and self-report relevant info: number of residents, mobility limitations, medical equipment dependencies (oxygen concentrator, dialysis), pets, languages spoken, whether they can help others
+- Block captains are nominated and verified (address confirmation + neighbor endorsement)
+- Neighborhood grid is divided into zones of ~20 households per block captain
+- Resource inventory: who has a generator, a truck, first aid training, a spare room
+
+**During a crisis:**
+
+- Any verified resident can declare a local event (storm, outage, flooding, missing person)
+- CrisisGrid activates the relevant zone(s) and notifies block captains
+- A structured task board appears: "Check on 847 Oak St (elderly resident, no car)" — not a feed, a work queue
+- Residents claim tasks, mark them complete, flag if help is needed
+- Priority scoring surfaces the highest-risk households first
+- Offline mode + SMS fallback for when data is unavailable
+
+**After the crisis:**
+
+- Auto-generated debrief: who was checked on, what resources were used, what gaps appeared
+- Block captains can submit reports to municipal emergency management
+- Community resilience score improves over time with each exercise
+
+---
+
 ### Why truly novel
-- FEMA's ready.gov is informational, not coordination
-- Nextdoor is a social network, not an ops tool
-- No verified block-captain / neighborhood ICS (Incident Command System) structure in an app
+
+- **FEMA / ready.gov** — informational only; no coordination layer
+- **Nextdoor** — social network optimized for engagement, not operations; no task structure, no verified roles, no vulnerability data
+- **PulsePoint** — cardiac emergency crowdsourcing only; no neighborhood coordination
+- **Zello** — walkie-talkie app; no structure, no task routing, no data
+- **Amazon Sidewalk / Ring Neighbors** — surveillance-focused, no coordination
+- **Genasys (formerly Zonehaven)** — evacuation management for governments only; no citizen layer
+
+CrisisGrid is the **first app to implement a civilian Incident Command System (ICS)** — the same hierarchical coordination structure used by FEMA and fire departments — at the neighborhood scale, with AI augmentation.
+
+---
 
 ### How AI is used
-AI prioritizes which households need checking first (vulnerability scoring), predicts resource needs based on crisis type, auto-routes tasks to nearest available neighbor, and generates post-event debriefs.
+
+AI is critical infrastructure, not a gimmick:
+
+1. **Vulnerability scoring** — at activation, AI ranks households by risk level using self-reported data (mobility, medical dependencies, number of residents, age) + external data (building type, flood zone, grid reliability history). Block captains get a prioritized checklist, not an alphabetical list.
+
+2. **Task routing** — AI matches available volunteers to tasks by proximity, capability (has a truck, speaks Spanish, has first aid training), and current task load. Prevents duplication; ensures coverage.
+
+3. **Resource demand prediction** — based on crisis type and duration forecast, AI estimates: how many households will need food/water/warmth, how much generator fuel will run out in 24 hours, which residents are likely to need evacuation assistance.
+
+4. **Anomaly detection** — flags households that haven't been checked on despite high priority; flags zones with no active block captains; alerts when tasks are claimed but not completed.
+
+5. **Post-event debrief generation** — auto-drafts a structured incident report from task completion data, timestamps, and volunteer notes — ready for submission to city emergency management.
+
+6. **Multilingual communication** — AI translates all alerts and task descriptions in real time for households with non-English language preferences.
+
+---
 
 ### Why a chatbot can't replace it
-No chatbot can physically check on a neighbor, carry emergency supplies, or make a real decision when communications are down. Human presence with AI coordination is the entire model.
+
+The product is **physical human action with legal accountability and real stakes**.
+
+- A chatbot cannot check on a bedridden neighbor
+- A chatbot cannot carry supplies across a flooded street
+- A chatbot cannot make the judgment call to call 911 for someone who isn't responding
+- A chatbot cannot vouch for a verified block captain who the municipality trusts
+- A chatbot cannot build the neighborhood trust that makes people open their doors
+
+AI coordinates. Humans act. The outcome (a neighbor checked on, a crisis managed) requires a human body in the world.
+
+---
 
 ### Large population served
-- Every US household (131M) is subject to some local emergency risk
-- Climate change is making hyperlocal emergencies more frequent
-- Municipalities and HOAs are actively seeking community resilience tools
+
+**Primary:**
+- 131M US households — every one is subject to some local emergency risk
+- 19,000+ municipalities in the US, most with no civilian coordination infrastructure
+- 355,000+ HOAs covering ~74M Americans
+
+**Secondary:**
+- 47M Americans with disabilities (higher emergency vulnerability)
+- 55M Americans 65+ (highest emergency mortality risk)
+- Non-English speaking households (lowest access to emergency info)
+
+**Macro tailwind:** The number of US billion-dollar weather/climate disasters has risen from ~6/yr in the 1990s to 20+/yr in the 2020s. This market grows every year climate change advances.
+
+---
 
 ### Path to $23.5M
-- Municipal contracts ($5K–$50K/yr per city for infrastructure + training)
-- HOA/community association subscriptions ($99/mo)
-- 400 municipal contracts at $5K avg = $2M ARR → 10–12x = $20–24M
-- Acquisition target: Motorola Solutions, Axon, FirstNet (AT&T), FEMA contractors
+
+**Revenue streams:**
+
+| Stream | Unit | Price | Notes |
+|--------|------|-------|-------|
+| Municipal SaaS | Per city/yr | $5K–$50K | Based on population; includes training + reporting |
+| HOA/community licensing | Per HOA/mo | $99–$299 | Self-serve; smaller communities |
+| County emergency management | Per county/yr | $25K–$150K | Integrates with existing EOC systems |
+| FEMA/state grant integration | Revenue share | TBD | Several grant programs fund community resilience tools |
+
+**Valuation path:**
+
+- Year 1–2: 100 municipal pilots at $8K avg + 500 HOAs at $150/mo = ~$1.7M ARR
+- Year 3: 400 cities + 2K HOAs + 10 county contracts = ~$5M ARR
+- Exit at 5–6x ARR = **$25–30M acquisition**
+
+**Why multiples are high:** Government/municipal SaaS has high retention (3–5 yr contracts), low churn, and strategic acquirers who value the data and relationships.
+
+**Acquisition targets:**
+- **Motorola Solutions** — public safety communications; CrisisGrid is the civilian complement to their first-responder tools
+- **Axon** — expanding beyond law enforcement into community safety
+- **AT&T FirstNet** — emergency communications network; CrisisGrid is their missing civilian layer
+- **Palantir / Esri** — geospatial emergency management; CrisisGrid adds the neighborhood human layer
+- **Everbridge** — mass notification platform; CrisisGrid adds two-way coordination they don't have
+
+---
+
+### Go-to-Market Strategy
+
+**Don't start with cities. Start with disasters.**
+
+1. **Disaster-recovery seeding** — When a major storm or wildfire hits, deploy CrisisGrid free to the affected community. Document outcomes (households checked, resources coordinated). Build case studies.
+
+2. **CERT program partnerships** — Community Emergency Response Teams (CERT) exist in thousands of cities. CrisisGrid is the app their members have always needed. Partner with CERT trainers to distribute.
+
+3. **HOA land-and-expand** — HOAs are fast to sign, pay directly, and talk to each other. One HOA in a city leads to municipal interest. Municipalities lead to county contracts.
+
+4. **Grant-funded pilots** — FEMA's BRIC (Building Resilient Infrastructure and Communities) grant program funds exactly this. Target cities actively applying for resilience funding.
+
+---
+
+### Risks and Mitigations
+
+| Risk | Mitigation |
+|------|-----------|
+| Liability if coordination fails during a crisis | Terms of service clearly position CrisisGrid as coordination support, not emergency dispatch. Same model as Nextdoor/Facebook. |
+| Data privacy (vulnerability data is sensitive) | All household data is self-reported, encrypted, visible only to verified block captains in that zone, and deletable on request. |
+| Low adoption before a crisis makes it useless | Gamified neighborhood readiness exercises (monthly 10-min drills); readiness score displayed to HOA boards. |
+| Competing with free tools (group texts, Facebook) | Those tools have no structure, no accountability, no offline mode, no vulnerability data. CrisisGrid is an ops tool, not a social network. |
+| Municipalities are slow to buy | HOA and CERT channel provides revenue and case studies while municipal sales cycle runs. |
 
 ---
 
