@@ -1,8 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { api, identity } from '../api'
-
-const GMAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
 const STEPS = ['Terms', 'Your Address', 'Residents', 'Medical', 'Languages', 'Resources']
 
@@ -18,12 +16,12 @@ const MEDICAL_OPTIONS = [
 ]
 
 const RESOURCE_OPTIONS = [
-  { key: 'generator', label: 'Generator' },
-  { key: 'truck', label: 'Truck / large vehicle' },
-  { key: 'first_aid', label: 'First aid trained' },
+  { key: 'generator',  label: 'Generator' },
+  { key: 'truck',      label: 'Truck / large vehicle' },
+  { key: 'first_aid',  label: 'First aid trained' },
   { key: 'spare_room', label: 'Spare room available' },
-  { key: 'chainsaw', label: 'Chainsaw' },
-  { key: 'ham_radio', label: 'Ham radio' },
+  { key: 'chainsaw',   label: 'Chainsaw' },
+  { key: 'ham_radio',  label: 'Ham radio' },
 ]
 
 const US_STATES = [
@@ -32,6 +30,21 @@ const US_STATES = [
   'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT',
   'VA','WA','WV','WI','WY','DC',
 ]
+
+// Nominatim returns full state names — map them to abbreviations
+const STATE_ABBR = {
+  'Alabama':'AL','Alaska':'AK','Arizona':'AZ','Arkansas':'AR','California':'CA',
+  'Colorado':'CO','Connecticut':'CT','Delaware':'DE','Florida':'FL','Georgia':'GA',
+  'Hawaii':'HI','Idaho':'ID','Illinois':'IL','Indiana':'IN','Iowa':'IA',
+  'Kansas':'KS','Kentucky':'KY','Louisiana':'LA','Maine':'ME','Maryland':'MD',
+  'Massachusetts':'MA','Michigan':'MI','Minnesota':'MN','Mississippi':'MS',
+  'Missouri':'MO','Montana':'MT','Nebraska':'NE','Nevada':'NV','New Hampshire':'NH',
+  'New Jersey':'NJ','New Mexico':'NM','New York':'NY','North Carolina':'NC',
+  'North Dakota':'ND','Ohio':'OH','Oklahoma':'OK','Oregon':'OR','Pennsylvania':'PA',
+  'Rhode Island':'RI','South Carolina':'SC','South Dakota':'SD','Tennessee':'TN',
+  'Texas':'TX','Utah':'UT','Vermont':'VT','Virginia':'VA','Washington':'WA',
+  'West Virginia':'WV','Wisconsin':'WI','Wyoming':'WY','District of Columbia':'DC',
+}
 
 function StepIndicator({ current, labels }) {
   return (
@@ -46,84 +59,127 @@ function StepIndicator({ current, labels }) {
   )
 }
 
-// Load Google Maps script once
-let mapsScriptLoading = false
-let mapsScriptLoaded = !!window.google?.maps
+// Address autocomplete using Nominatim (OpenStreetMap) — no API key needed
+function AddressAutocomplete({ value, onChange, onSelect }) {
+  const [suggestions, setSuggestions] = useState([])
+  const [open, setOpen] = useState(false)
+  const [searching, setSearching] = useState(false)
+  const [noResults, setNoResults] = useState(false)
+  const debounceRef = useRef(null)
 
-function useMapsLoader(enabled) {
-  const [loaded, setLoaded] = useState(mapsScriptLoaded)
+  function handleInput(e) {
+    const q = e.target.value
+    onChange(q)
+    setNoResults(false)
 
-  useEffect(() => {
-    if (!enabled || mapsScriptLoaded || mapsScriptLoading) {
-      if (mapsScriptLoaded) setLoaded(true)
-      return
-    }
-    mapsScriptLoading = true
-    const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&libraries=places`
-    script.async = true
-    script.onload = () => {
-      mapsScriptLoaded = true
-      mapsScriptLoading = false
-      setLoaded(true)
-    }
-    document.head.appendChild(script)
-  }, [enabled])
+    clearTimeout(debounceRef.current)
+    if (q.length < 6) { setSuggestions([]); setOpen(false); return }
 
-  return loaded
-}
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?` +
+          `q=${encodeURIComponent(q)}&format=json&countrycodes=us&addressdetails=1&limit=6`,
+          { headers: { 'Accept-Language': 'en', 'User-Agent': 'CrisisGrid/1.0' } }
+        )
+        const data = await res.json()
+        setSuggestions(data)
+        setOpen(data.length > 0)
+        setNoResults(data.length === 0)
+      } catch {
+        // Network error — user can still fill in manually
+      } finally {
+        setSearching(false)
+      }
+    }, 600) // 600ms debounce respects Nominatim's 1 req/s policy
+  }
 
-// Address autocomplete powered by Google Places
-function AddressAutocomplete({ value, onChange, onPlaceSelect }) {
-  const inputRef = useRef(null)
-  const autocompleteRef = useRef(null)
+  function pick(item) {
+    const a = item.address
+    const house = a.house_number || ''
+    const road  = a.road || a.pedestrian || a.footway || a.path || ''
+    const street = [house, road].filter(Boolean).join(' ')
+    const city   = a.city || a.town || a.village || a.municipality || a.county || ''
+    const state  = STATE_ABBR[a.state] || a.state || ''
+    const zip    = (a.postcode || '').split('-')[0]
+    const neighborhood = a.neighbourhood || a.suburb || a.quarter || ''
 
-  useEffect(() => {
-    if (!inputRef.current || !window.google?.maps?.places) return
-    autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
-      componentRestrictions: { country: 'us' },
-      types: ['address'],
-      fields: ['address_components', 'geometry', 'formatted_address'],
+    onSelect({
+      street: street || city,  // fallback so the field is never blank
+      city,
+      state,
+      zip,
+      neighborhood,
+      lat: parseFloat(item.lat),
+      lng: parseFloat(item.lon),
     })
-    autocompleteRef.current.addListener('place_changed', () => {
-      const place = autocompleteRef.current.getPlace()
-      if (!place.geometry) return
-
-      const components = place.address_components
-      const get = (type) =>
-        components.find(c => c.types.includes(type))?.long_name || ''
-      const getShort = (type) =>
-        components.find(c => c.types.includes(type))?.short_name || ''
-
-      const streetNumber = get('street_number')
-      const route = get('route')
-      const street = streetNumber && route ? `${streetNumber} ${route}` : route || streetNumber
-      const city = get('locality') || get('sublocality') || get('administrative_area_level_3')
-      const state = getShort('administrative_area_level_1')
-      const zip = get('postal_code')
-      const neighborhood = get('neighborhood') || get('sublocality_level_1') || ''
-      const lat = place.geometry.location.lat()
-      const lng = place.geometry.location.lng()
-
-      onPlaceSelect({ street, city, state, zip, neighborhood, lat, lng, formatted: place.formatted_address })
-    })
-  }, [])
+    onChange(street || item.display_name)
+    setSuggestions([])
+    setOpen(false)
+  }
 
   return (
-    <input
-      ref={inputRef}
-      className="form-input"
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      placeholder="Start typing your address…"
-      autoComplete="off"
-    />
+    <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative' }}>
+        <input
+          className="form-input"
+          value={value}
+          onChange={handleInput}
+          onBlur={() => setTimeout(() => setOpen(false), 200)}
+          onFocus={() => suggestions.length > 0 && setOpen(true)}
+          placeholder="Start typing your street address…"
+          autoComplete="off"
+        />
+        {searching && (
+          <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)' }}>
+            <div className="spinner" />
+          </div>
+        )}
+      </div>
+
+      {open && suggestions.length > 0 && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200,
+          background: 'white', border: '1px solid var(--border)',
+          borderRadius: 6, boxShadow: 'var(--shadow-md)',
+          maxHeight: 280, overflowY: 'auto',
+        }}>
+          {suggestions.map((s, i) => (
+            <div
+              key={i}
+              onMouseDown={() => pick(s)}
+              style={{
+                padding: '9px 14px', cursor: 'pointer', fontSize: 13, lineHeight: 1.4,
+                borderBottom: i < suggestions.length - 1 ? '1px solid var(--border)' : 'none',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+              onMouseLeave={e => e.currentTarget.style.background = 'white'}
+            >
+              <div style={{ fontWeight: 500 }}>{s.display_name.split(',')[0]}</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                {s.display_name.split(',').slice(1).join(',').trim()}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {noResults && value.length >= 6 && !searching && (
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+          No results — you can still fill in the fields below manually.
+        </div>
+      )}
+
+      <div className="form-hint">
+        Powered by OpenStreetMap/Nominatim · US addresses only · No API key required
+      </div>
+    </div>
   )
 }
 
 export default function Register() {
   const navigate = useNavigate()
-  const mapsLoaded = useMapsLoader(!!GMAPS_KEY)
   const [step, setStep] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
@@ -132,7 +188,6 @@ export default function Register() {
 
   const [form, setForm] = useState({
     name: '',
-    // address fields
     street: '',
     city: '',
     state: '',
@@ -140,36 +195,29 @@ export default function Register() {
     neighborhood: '',
     lat: null,
     lng: null,
-    // contact
     contact: '',
-    // residents
     residents_count: 1,
     is_elderly: false,
     has_mobility_limitations: false,
     has_car: true,
     can_help: true,
-    // medical
     medical_equipment: [],
-    // languages
     languages: ['English'],
-    // resources
     resources: {},
   })
 
-  function set(field, value) {
-    setForm(f => ({ ...f, [field]: value }))
-  }
+  const set = (field, value) => setForm(f => ({ ...f, [field]: value }))
 
   function handlePlaceSelect(place) {
     setForm(f => ({
       ...f,
-      street: place.street,
-      city: place.city,
-      state: place.state,
-      zip: place.zip,
+      street:       place.street,
+      city:         place.city,
+      state:        place.state,
+      zip:          place.zip,
       neighborhood: place.neighborhood,
-      lat: place.lat,
-      lng: place.lng,
+      lat:          place.lat,
+      lng:          place.lng,
     }))
   }
 
@@ -186,20 +234,10 @@ export default function Register() {
     setForm(f => ({ ...f, resources: { ...f.resources, [key]: !f.resources[key] } }))
   }
 
-  function updateLanguage(index, value) {
+  function updateLanguage(i, val) {
     const langs = [...form.languages]
-    langs[index] = value
+    langs[i] = val
     setForm(f => ({ ...f, languages: langs }))
-  }
-
-  function addLanguage() {
-    if (form.languages.length < 4) {
-      setForm(f => ({ ...f, languages: [...f.languages, ''] }))
-    }
-  }
-
-  function removeLanguage(index) {
-    setForm(f => ({ ...f, languages: f.languages.filter((_, i) => i !== index) }))
   }
 
   function validateStep() {
@@ -212,28 +250,27 @@ export default function Register() {
     setSubmitting(true)
     setError(null)
     try {
-      const payload = {
-        name: form.name,
-        address: form.street,
-        city: form.city,
-        state: form.state,
-        zip_code: form.zip,
-        lat: form.lat,
-        lng: form.lng,
-        neighborhood: form.neighborhood || null,
-        contact: form.contact || null,
-        residents_count: parseInt(form.residents_count),
+      const result = await api.register({
+        name:                    form.name,
+        address:                 form.street,
+        city:                    form.city,
+        state:                   form.state,
+        zip_code:                form.zip || null,
+        lat:                     form.lat,
+        lng:                     form.lng,
+        neighborhood:            form.neighborhood || null,
+        contact:                 form.contact || null,
+        residents_count:         parseInt(form.residents_count),
         has_mobility_limitations: form.has_mobility_limitations,
-        is_elderly: form.is_elderly,
-        has_car: form.has_car,
-        can_help: form.can_help,
-        medical_equipment: form.medical_equipment,
-        languages: form.languages.filter(l => l.trim()),
-        resources: form.resources,
-        is_captain: false,
-        terms_accepted: true,
-      }
-      const result = await api.register(payload)
+        is_elderly:              form.is_elderly,
+        has_car:                 form.has_car,
+        can_help:                form.can_help,
+        medical_equipment:       form.medical_equipment,
+        languages:               form.languages.filter(l => l.trim()),
+        resources:               form.resources,
+        is_captain:              false,
+        terms_accepted:          true,
+      })
       const household = await api.getHousehold(result.id)
       identity.set(household)
       window.dispatchEvent(new Event('cg:identity'))
@@ -263,10 +300,10 @@ export default function Register() {
           </div>
           <div className="text-sm text-muted" style={{ marginBottom: 24 }}>
             {success.score >= 60
-              ? 'Your household has high vulnerability factors. Block captains will prioritize checking on you first.'
+              ? 'High vulnerability factors noted. Block captains will prioritize you first.'
               : success.score >= 20
-              ? 'Some vulnerability factors noted. You will be included in check-in queues.'
-              : 'Your household is marked as a potential helper. Thank you for being ready to assist neighbors!'}
+              ? 'Some vulnerability factors noted. You\'ll be included in check-in queues.'
+              : 'Marked as a potential helper. Thank you for being ready to assist neighbors!'}
           </div>
           <div className="row" style={{ justifyContent: 'center', gap: 12 }}>
             <button className="btn btn-primary" onClick={() => navigate('/')}>Go to Home</button>
@@ -282,7 +319,7 @@ export default function Register() {
       <div className="page-header">
         <div className="page-title">Register Your Household</div>
         <div className="page-subtitle">
-          Covers all 50 US states. Your info is only visible to your zone's block captain during an emergency.
+          Works for all 50 US states. Address lookup is powered by OpenStreetMap — no account or API key needed.
         </div>
       </div>
 
@@ -300,7 +337,7 @@ export default function Register() {
               <div style={{ fontSize: 14, lineHeight: 1.6 }}>
                 In any life-threatening emergency, <strong>call 911 first.</strong> CrisisGrid
                 is a volunteer community coordination tool only. It does not dispatch emergency
-                services, guarantee any response, or verify the accuracy of user-provided data.
+                services or guarantee any response.
               </div>
             </div>
             <div style={{ fontSize: 14, lineHeight: 1.7, marginBottom: 16 }}>
@@ -328,7 +365,8 @@ export default function Register() {
           <div>
             <div className="font-semibold" style={{ marginBottom: 4 }}>Your Location</div>
             <div className="text-sm text-muted" style={{ marginBottom: 16 }}>
-              Enter your full US address. Your zone is auto-assigned based on your city and neighborhood.
+              Start typing your address to get suggestions, or fill in the fields below manually.
+              Your zone is auto-assigned based on city and neighborhood.
             </div>
 
             <div className="form-group">
@@ -337,24 +375,12 @@ export default function Register() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">
-                Street address *
-                {GMAPS_KEY && mapsLoaded && <span className="text-xs text-muted" style={{ marginLeft: 8 }}>🗺️ Google Maps autocomplete active</span>}
-              </label>
-              {GMAPS_KEY && mapsLoaded ? (
-                <AddressAutocomplete
-                  value={form.street}
-                  onChange={v => set('street', v)}
-                  onPlaceSelect={handlePlaceSelect}
-                />
-              ) : (
-                <input
-                  className="form-input"
-                  placeholder="123 Main Street"
-                  value={form.street}
-                  onChange={e => set('street', e.target.value)}
-                />
-              )}
+              <label className="form-label">Street address *</label>
+              <AddressAutocomplete
+                value={form.street}
+                onChange={v => set('street', v)}
+                onSelect={handlePlaceSelect}
+              />
             </div>
 
             <div className="form-row">
@@ -365,7 +391,7 @@ export default function Register() {
               <div className="form-group">
                 <label className="form-label">State *</label>
                 <select className="form-select" value={form.state} onChange={e => set('state', e.target.value)}>
-                  <option value="">Select state…</option>
+                  <option value="">Select…</option>
                   {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
@@ -390,14 +416,7 @@ export default function Register() {
 
             {form.lat && (
               <div className="alert alert-success">
-                📍 Location confirmed: {form.city}, {form.state} ({form.lat.toFixed(4)}, {form.lng.toFixed(4)})
-              </div>
-            )}
-
-            {!GMAPS_KEY && (
-              <div className="alert alert-info" style={{ fontSize: 12 }}>
-                Google Maps autocomplete is disabled. Set <code>VITE_GOOGLE_MAPS_API_KEY</code> in{' '}
-                <code>frontend/.env</code> to enable address suggestions.
+                📍 Geocoded: {form.city}, {form.state} ({form.lat.toFixed(4)}, {form.lng.toFixed(4)})
               </div>
             )}
           </div>
@@ -432,7 +451,7 @@ export default function Register() {
               </label>
             </div>
             <div className="alert alert-info mt-16">
-              This data is used only to prioritize check-ins. It is only shown to your block captain.
+              Used only to prioritize check-ins. Visible only to your block captain.
             </div>
           </div>
         )}
@@ -442,7 +461,7 @@ export default function Register() {
           <div>
             <div className="font-semibold" style={{ marginBottom: 4 }}>Medical Equipment Dependencies</div>
             <div className="text-sm text-muted" style={{ marginBottom: 16 }}>
-              Equipment that requires electricity. Raises your priority during power outages.
+              Equipment requiring electricity — raises your priority during power outages.
             </div>
             <div className="checkbox-group">
               {MEDICAL_OPTIONS.map(item => (
@@ -465,23 +484,19 @@ export default function Register() {
           <div>
             <div className="font-semibold" style={{ marginBottom: 4 }}>Languages Spoken</div>
             <div className="text-sm text-muted" style={{ marginBottom: 16 }}>
-              First language listed is used for matching with bilingual volunteers.
+              First language listed is used for matching bilingual volunteers.
             </div>
             <div className="stack">
               {form.languages.map((lang, i) => (
                 <div key={i} className="row">
-                  <input
-                    className="form-input"
+                  <input className="form-input" style={{ flex: 1 }}
                     placeholder={i === 0 ? 'Primary language (e.g. English)' : 'Additional language'}
-                    value={lang}
-                    onChange={e => updateLanguage(i, e.target.value)}
-                    style={{ flex: 1 }}
-                  />
-                  {i > 0 && <button className="btn btn-outline btn-sm" onClick={() => removeLanguage(i)}>✕</button>}
+                    value={lang} onChange={e => updateLanguage(i, e.target.value)} />
+                  {i > 0 && <button className="btn btn-outline btn-sm" onClick={() => setForm(f => ({ ...f, languages: f.languages.filter((_, j) => j !== i) }))}>✕</button>}
                 </div>
               ))}
               {form.languages.length < 4 && (
-                <button className="btn btn-outline btn-sm" style={{ alignSelf: 'flex-start' }} onClick={addLanguage}>
+                <button className="btn btn-outline btn-sm" style={{ alignSelf: 'flex-start' }} onClick={() => setForm(f => ({ ...f, languages: [...f.languages, ''] }))}>
                   + Add language
                 </button>
               )}
@@ -509,18 +524,11 @@ export default function Register() {
 
         <hr className="divider" />
         <div className="row-between">
-          <button className="btn btn-outline" onClick={() => setStep(s => s - 1)} disabled={step === 0}>
-            ← Back
-          </button>
-          {step < STEPS.length - 1 ? (
-            <button className="btn btn-primary" onClick={() => setStep(s => s + 1)} disabled={!validateStep()}>
-              Next →
-            </button>
-          ) : (
-            <button className="btn btn-success" onClick={handleSubmit} disabled={submitting}>
-              {submitting ? 'Registering…' : '✓ Complete Registration'}
-            </button>
-          )}
+          <button className="btn btn-outline" onClick={() => setStep(s => s - 1)} disabled={step === 0}>← Back</button>
+          {step < STEPS.length - 1
+            ? <button className="btn btn-primary" onClick={() => setStep(s => s + 1)} disabled={!validateStep()}>Next →</button>
+            : <button className="btn btn-success" onClick={handleSubmit} disabled={submitting}>{submitting ? 'Registering…' : '✓ Complete Registration'}</button>
+          }
         </div>
       </div>
     </div>
