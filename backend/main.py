@@ -11,7 +11,8 @@ from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 app = FastAPI(title="CrisisGrid API")
@@ -1305,3 +1306,20 @@ def seed_demo():
     conn.commit()
     conn.close()
     return {"message": "Demo data loaded", "zones": 2, "households": len(seed)}
+
+
+# ── Serve React frontend (production / Replit) ─────────────────────────────────
+
+_DIST = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+
+if os.path.isdir(_DIST):
+    # Serve /assets, /favicon.ico, etc.
+    app.mount("/assets", StaticFiles(directory=os.path.join(_DIST, "assets")), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def serve_spa(full_path: str):
+        # Serve any static file that exists, otherwise return index.html (SPA routing)
+        target = os.path.join(_DIST, full_path)
+        if os.path.isfile(target):
+            return FileResponse(target)
+        return FileResponse(os.path.join(_DIST, "index.html"))
