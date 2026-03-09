@@ -92,20 +92,53 @@ function TaskCard({ task, me, onClaim, onComplete, onFlag, loading }) {
       </div>
       <div className="task-card-actions">
         {task.status === 'pending' && me && (
-          <button className="btn btn-primary btn-sm" onClick={() => onClaim(task)} disabled={loading}>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => onClaim(task)}
+            disabled={loading}
+            aria-label={`Claim task: ${task.description}`}
+          >
             Claim
           </button>
         )}
         {task.status === 'claimed' && isMine && (
           <>
-            <button className="btn btn-success btn-sm" onClick={() => onComplete(task)} disabled={loading}>Done</button>
-            <button className="btn btn-danger btn-sm" onClick={() => onFlag(task)} disabled={loading}>Flag</button>
+            <button
+              className="btn btn-success btn-sm"
+              onClick={() => onComplete(task)}
+              disabled={loading}
+              aria-label={`Mark complete: ${task.description}`}
+            >
+              Done
+            </button>
+            <button
+              className="btn btn-danger btn-sm"
+              onClick={() => onFlag(task)}
+              disabled={loading}
+              aria-label={`Flag for follow-up: ${task.description}`}
+            >
+              Flag
+            </button>
           </>
         )}
         {task.status === 'claimed' && !isMine && me?.is_captain && (
           <>
-            <button className="btn btn-success btn-sm" onClick={() => onComplete(task)} disabled={loading}>Done</button>
-            <button className="btn btn-danger btn-sm" onClick={() => onFlag(task)} disabled={loading}>Flag</button>
+            <button
+              className="btn btn-success btn-sm"
+              onClick={() => onComplete(task)}
+              disabled={loading}
+              aria-label={`Mark complete: ${task.description}`}
+            >
+              Done
+            </button>
+            <button
+              className="btn btn-danger btn-sm"
+              onClick={() => onFlag(task)}
+              disabled={loading}
+              aria-label={`Flag for follow-up: ${task.description}`}
+            >
+              Flag
+            </button>
           </>
         )}
       </div>
@@ -209,6 +242,13 @@ export default function CrisisBoard() {
       {flagModal && <FlagModal task={flagModal} onConfirm={(notes) => flag(flagModal, notes)} onCancel={() => setFlagModal(null)} />}
       {completeModal && <CompleteModal task={completeModal} onConfirm={(notes) => complete(completeModal, notes)} onCancel={() => setCompleteModal(null)} />}
 
+      {/* Drill banner */}
+      {crisis.is_drill && (
+        <div className="drill-banner" role="alert" aria-live="polite">
+          🟡 DRILL — This is a practice exercise. No real emergency is in progress.
+        </div>
+      )}
+
       {/* Header */}
       <div className="page-header">
         <div className="row-between">
@@ -280,9 +320,15 @@ export default function CrisisBoard() {
 
       {/* Task board */}
       <div className="card">
-        <div className="tabs">
+        <div className="tabs" role="tablist">
           {STATUS_TABS.map(s => (
-            <button key={s} className={`tab ${activeTab === s ? 'active' : ''}`} onClick={() => setActiveTab(s)}>
+            <button
+              key={s}
+              className={`tab ${activeTab === s ? 'active' : ''}`}
+              role="tab"
+              aria-selected={activeTab === s}
+              onClick={() => setActiveTab(s)}
+            >
               {s.charAt(0).toUpperCase() + s.slice(1)}
               {counts[s] > 0 && <span style={{ marginLeft: 6, background: 'var(--border)', padding: '0 6px', borderRadius: 99, fontSize: 11 }}>{counts[s]}</span>}
             </button>

@@ -143,12 +143,18 @@ export default function Home() {
       )}
 
       {me && (
-        <div className="alert alert-info mb-16" style={{ marginBottom: 16 }}>
-          <span>👋</span>
+        <div className="alert alert-info mb-16" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
           <span>
-            Signed in as <strong>{me.name}</strong> — {me.address}
-            {me.is_captain && <strong> · Block Captain</strong>}
+            👋 Signed in as <strong>{me.name}</strong> — {me.address}
+            {me.is_admin && <strong> · 🏛️ City Admin</strong>}
+            {me.is_captain && !me.is_admin && <strong> · Block Captain</strong>}
           </span>
+          <div className="row gap-8">
+            {me.is_admin && (
+              <Link to="/admin" className="btn btn-outline btn-sm">Admin Dashboard →</Link>
+            )}
+            <Link to="/edit-profile" className="btn btn-outline btn-sm">Edit profile</Link>
+          </div>
         </div>
       )}
 

@@ -127,12 +127,21 @@ export default function Messages() {
     <div>
       <div className="page-header row-between">
         <div>
-          <div className="page-title">
-            Messages {unread > 0 && <span style={{ fontSize: 16, background: 'var(--red)', color: 'white', borderRadius: 99, padding: '2px 10px', marginLeft: 8 }}>{unread}</span>}
-          </div>
+          <h1 className="page-title">
+            Messages{' '}
+            {unread > 0 && (
+              <span
+                style={{ fontSize: 16, background: 'var(--red)', color: 'white', borderRadius: 99, padding: '2px 10px', marginLeft: 8 }}
+                aria-live="polite"
+                aria-label={`${unread} unread messages`}
+              >
+                {unread}
+              </span>
+            )}
+          </h1>
           <div className="page-subtitle">Coordinate with neighbors and your block captain</div>
         </div>
-        <button className="btn btn-primary" onClick={() => { setShowCompose(true); setSelected(null) }}>
+        <button className="btn btn-primary" onClick={() => { setShowCompose(true); setSelected(null) }} aria-label="Compose new message">
           ✉️ Compose
         </button>
       </div>
@@ -143,11 +152,23 @@ export default function Messages() {
 
         {/* Left: message list */}
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div className="tabs" style={{ padding: '0 12px', margin: 0 }}>
-            <button className={`tab ${tab === 'inbox' ? 'active' : ''}`} onClick={() => setTab('inbox')}>
+          <div className="tabs" style={{ padding: '0 12px', margin: 0 }} role="tablist">
+            <button
+              className={`tab ${tab === 'inbox' ? 'active' : ''}`}
+              role="tab"
+              aria-selected={tab === 'inbox'}
+              onClick={() => setTab('inbox')}
+            >
               Inbox {unread > 0 && <span style={{ marginLeft: 4, background: 'var(--red)', color: 'white', borderRadius: 99, padding: '0 5px', fontSize: 10 }}>{unread}</span>}
             </button>
-            <button className={`tab ${tab === 'sent' ? 'active' : ''}`} onClick={() => setTab('sent')}>Sent</button>
+            <button
+              className={`tab ${tab === 'sent' ? 'active' : ''}`}
+              role="tab"
+              aria-selected={tab === 'sent'}
+              onClick={() => setTab('sent')}
+            >
+              Sent
+            </button>
           </div>
 
           {loading && <div className="loading"><div className="spinner" /></div>}

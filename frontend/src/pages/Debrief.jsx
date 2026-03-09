@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { api } from '../api'
+import { api, identity } from '../api'
 
 const CRISIS_LABELS = { storm: 'Storm', outage: 'Power Outage', flood: 'Flood', wildfire: 'Wildfire', missing_person: 'Missing Person' }
 const CRISIS_ICONS = { storm: '⛈️', outage: '⚡', flood: '🌊', wildfire: '🔥', missing_person: '🔍' }
@@ -55,20 +55,36 @@ export default function Debrief() {
   if (error) return <div className="alert alert-error">{error}</div>
   if (!data) return null
 
+  const me = identity.get()
   const { crisis, summary, high_priority_unchecked, flagged_tasks, completed_tasks, generated_at } = data
   const coverageColor = summary.coverage_rate >= 80 ? 'var(--green)' : summary.coverage_rate >= 50 ? 'var(--amber)' : 'var(--red)'
 
   return (
     <div>
+      {crisis.is_drill && (
+        <div className="drill-banner" role="alert">
+          🟡 DRILL — This debrief is for a practice exercise, not a real incident.
+        </div>
+      )}
+
       <div className="page-header">
         <div className="row gap-8 items-center" style={{ marginBottom: 8 }}>
           <Link to={crisis.status === 'active' ? `/crisis/${id}` : '/'} className="btn btn-outline btn-sm">← Back</Link>
+          {(me?.is_captain || me?.is_admin) && (
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={() => api.exportDebriefCsv(id)}
+              aria-label="Download debrief as CSV"
+            >
+              ⬇ Download CSV
+            </button>
+          )}
         </div>
         <div className="row gap-8 items-center" style={{ marginBottom: 6 }}>
           <span style={{ fontSize: 28 }}>{CRISIS_ICONS[crisis.type] || '⚠️'}</span>
-          <div className="page-title">
-            {CRISIS_LABELS[crisis.type] || crisis.type} — Incident Debrief
-          </div>
+          <h1 className="page-title">
+            {crisis.is_drill ? '🟡 DRILL: ' : ''}{CRISIS_LABELS[crisis.type] || crisis.type} — Incident Debrief
+          </h1>
           <span className={`badge badge-${crisis.status}`}>
             {crisis.status === 'active' ? '🔴 Active' : '✅ Resolved'}
           </span>

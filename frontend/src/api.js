@@ -14,6 +14,7 @@ async function req(path, opts = {}) {
 
 const post = (path, body) => req(path, { method: 'POST', body: JSON.stringify(body) })
 const put = (path, body = {}) => req(path, { method: 'PUT', body: JSON.stringify(body) })
+const del = (path) => req(path, { method: 'DELETE' })
 
 export const api = {
   health: () => req('/health'),
@@ -26,6 +27,11 @@ export const api = {
   register: (data) => post('/households', data),
   getHouseholds: (zoneId) => req(`/households${zoneId ? `?zone_id=${zoneId}` : ''}`),
   getHousehold: (id) => req(`/households/${id}`),
+  updateHousehold: (id, data) => req(`/households/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteHousehold: (id) => del(`/households/${id}`),
+  exportHouseholdsCsv: () => {
+    window.open(`${BASE}/households/export.csv`, '_blank')
+  },
 
   // Crisis
   activateCrisis: (data) => post('/crisis', data),
@@ -44,6 +50,9 @@ export const api = {
 
   // Debrief
   getDebrief: (crisisId) => req(`/crisis/${crisisId}/debrief`),
+  exportDebriefCsv: (crisisId) => {
+    window.open(`${BASE}/crisis/${crisisId}/debrief/export.csv`, '_blank')
+  },
 
   // Messages
   sendMessage: (data) => post('/messages', data),
@@ -60,6 +69,10 @@ export const api = {
     req(`/captain-applications${status ? `?status=${status}` : ''}`),
   approveApplication: (id) => put(`/captain-applications/${id}/approve`),
   denyApplication: (id) => put(`/captain-applications/${id}/deny`),
+
+  // Admin
+  getAdminStats: () => req('/admin/stats'),
+  getAuditLog: (limit = 100) => req(`/admin/audit-log?limit=${limit}`),
 
   // Seed
   seed: () => post('/seed', {}),

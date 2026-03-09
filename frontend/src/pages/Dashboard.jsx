@@ -46,7 +46,8 @@ export default function Dashboard() {
   const [activatingCrisis, setActivatingCrisis] = useState(false)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('households')
-  const [crisisForm, setCrisisForm] = useState({ type: 'storm', description: '', affected_zones: [] })
+  const [crisisForm, setCrisisForm] = useState({ type: 'storm', description: '', affected_zones: [], is_drill: false })
+  const [lastCrisisResult, setLastCrisisResult] = useState(null)
 
   useEffect(() => {
     if (!me) { navigate('/'); return }
@@ -83,6 +84,7 @@ export default function Dashboard() {
         declared_by: me.id,
         affected_zones: crisisForm.affected_zones.map(Number),
       })
+      setLastCrisisResult(result)
       setShowCrisisForm(false)
       navigate(`/crisis/${result.id}`)
     } catch (e) {
@@ -169,6 +171,16 @@ export default function Dashboard() {
           <div className="form-group">
             <label className="form-label">Description (optional)</label>
             <input className="form-input" placeholder="Brief situation description…" value={crisisForm.description} onChange={e => setCrisisForm(f => ({ ...f, description: e.target.value }))} />
+          </div>
+          <div className="form-group">
+            <label className="checkbox-item" style={{ fontWeight: 600 }}>
+              <input
+                type="checkbox"
+                checked={crisisForm.is_drill}
+                onChange={e => setCrisisForm(f => ({ ...f, is_drill: e.target.checked }))}
+              />
+              🟡 This is a drill (practice exercise — residents will see a DRILL banner)
+            </label>
           </div>
           <div className="alert alert-warning">
             This will generate a check-in task for every household in the selected zones.

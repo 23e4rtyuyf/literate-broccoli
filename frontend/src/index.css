@@ -393,6 +393,38 @@ body {
 .step-label { font-size: 11px; color: var(--muted); text-align: center; }
 .step.active .step-label { color: var(--navy); font-weight: 600; }
 
+/* Drill mode banner */
+.drill-banner {
+  background: #fef3c7;
+  border: 2px solid #d97706;
+  border-radius: var(--radius);
+  padding: 12px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: #92400e;
+  font-size: 15px;
+}
+
+/* Skip-to-content link (accessibility) */
+.skip-nav {
+  position: absolute;
+  top: -100px;
+  left: 16px;
+  background: var(--navy);
+  color: white;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  z-index: 9999;
+  transition: top 0.15s;
+}
+.skip-nav:focus { top: 8px; }
+
 @media (max-width: 640px) {
   .form-row { grid-template-columns: 1fr; }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }

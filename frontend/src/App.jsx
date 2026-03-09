@@ -9,12 +9,14 @@ import Terms from './pages/Terms'
 import Messages from './pages/Messages'
 import MapView from './pages/MapView'
 import CaptainApply from './pages/CaptainApply'
+import Admin from './pages/Admin'
+import EditProfile from './pages/EditProfile'
 
 export default function App() {
   return (
     <div className="app">
       <NavBar />
-      <main className="main-content">
+      <main className="main-content" id="main-content">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/register" element={<Register />} />
@@ -25,6 +27,8 @@ export default function App() {
           <Route path="/messages" element={<Messages />} />
           <Route path="/map" element={<MapView />} />
           <Route path="/apply-captain" element={<CaptainApply />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/edit-profile" element={<EditProfile />} />
         </Routes>
       </main>
     </div>

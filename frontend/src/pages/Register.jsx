@@ -130,6 +130,9 @@ function AddressAutocomplete({ value, onChange, onSelect }) {
           onFocus={() => suggestions.length > 0 && setOpen(true)}
           placeholder="Start typing your street address…"
           autoComplete="off"
+          aria-label="Street address search"
+          aria-autocomplete="list"
+          aria-expanded={open}
         />
         {searching && (
           <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)' }}>
@@ -317,7 +320,7 @@ export default function Register() {
   return (
     <div style={{ maxWidth: 600, margin: '0 auto' }}>
       <div className="page-header">
-        <div className="page-title">Register Your Household</div>
+        <h1 className="page-title">Register Your Household</h1>
         <div className="page-subtitle">
           Works for all 50 US states. Address lookup is powered by OpenStreetMap — no account or API key needed.
         </div>
@@ -425,31 +428,34 @@ export default function Register() {
         {/* Step 2: Residents */}
         {step === 2 && (
           <div>
-            <div className="font-semibold" style={{ marginBottom: 16 }}>Residents in Your Household</div>
+            <h2 className="font-semibold" style={{ marginBottom: 16 }}>Residents in Your Household</h2>
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Number of residents</label>
-                <input type="number" min="1" max="30" className="form-input" value={form.residents_count} onChange={e => set('residents_count', e.target.value)} />
+                <label className="form-label" htmlFor="reg-residents">Number of residents</label>
+                <input id="reg-residents" type="number" min="1" max="30" className="form-input" value={form.residents_count} onChange={e => set('residents_count', e.target.value)} />
               </div>
             </div>
-            <div className="checkbox-group">
-              <label className="checkbox-item">
-                <input type="checkbox" checked={form.is_elderly} onChange={e => set('is_elderly', e.target.checked)} />
-                Household includes residents 65 or older
-              </label>
-              <label className="checkbox-item">
-                <input type="checkbox" checked={form.has_mobility_limitations} onChange={e => set('has_mobility_limitations', e.target.checked)} />
-                Someone has mobility limitations (wheelchair, walker, etc.)
-              </label>
-              <label className="checkbox-item">
-                <input type="checkbox" checked={!form.has_car} onChange={e => set('has_car', !e.target.checked)} />
-                No vehicle — cannot self-evacuate
-              </label>
-              <label className="checkbox-item">
-                <input type="checkbox" checked={form.can_help} onChange={e => set('can_help', e.target.checked)} />
-                We are able to help neighbors during emergencies
-              </label>
-            </div>
+            <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+              <legend className="form-label" style={{ marginBottom: 8 }}>Household characteristics</legend>
+              <div className="checkbox-group">
+                <label className="checkbox-item">
+                  <input type="checkbox" checked={form.is_elderly} onChange={e => set('is_elderly', e.target.checked)} />
+                  Household includes residents 65 or older
+                </label>
+                <label className="checkbox-item">
+                  <input type="checkbox" checked={form.has_mobility_limitations} onChange={e => set('has_mobility_limitations', e.target.checked)} />
+                  Someone has mobility limitations (wheelchair, walker, etc.)
+                </label>
+                <label className="checkbox-item">
+                  <input type="checkbox" checked={!form.has_car} onChange={e => set('has_car', !e.target.checked)} />
+                  No vehicle — cannot self-evacuate
+                </label>
+                <label className="checkbox-item">
+                  <input type="checkbox" checked={form.can_help} onChange={e => set('can_help', e.target.checked)} />
+                  We are able to help neighbors during emergencies
+                </label>
+              </div>
+            </fieldset>
             <div className="alert alert-info mt-16">
               Used only to prioritize check-ins. Visible only to your block captain.
             </div>
@@ -459,18 +465,21 @@ export default function Register() {
         {/* Step 3: Medical */}
         {step === 3 && (
           <div>
-            <div className="font-semibold" style={{ marginBottom: 4 }}>Medical Equipment Dependencies</div>
+            <h2 className="font-semibold" style={{ marginBottom: 4 }}>Medical Equipment Dependencies</h2>
             <div className="text-sm text-muted" style={{ marginBottom: 16 }}>
               Equipment requiring electricity — raises your priority during power outages.
             </div>
-            <div className="checkbox-group">
-              {MEDICAL_OPTIONS.map(item => (
-                <label key={item} className="checkbox-item">
-                  <input type="checkbox" checked={form.medical_equipment.includes(item)} onChange={() => toggleMedical(item)} />
-                  {item}
-                </label>
-              ))}
-            </div>
+            <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+              <legend className="form-label" style={{ marginBottom: 8 }}>Medical equipment that requires power</legend>
+              <div className="checkbox-group">
+                {MEDICAL_OPTIONS.map(item => (
+                  <label key={item} className="checkbox-item">
+                    <input type="checkbox" checked={form.medical_equipment.includes(item)} onChange={() => toggleMedical(item)} />
+                    {item}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             {form.medical_equipment.length > 0 && (
               <div className="alert alert-warning mt-16">
                 ⚡ Your household will be flagged as high priority during power outages.
@@ -507,18 +516,21 @@ export default function Register() {
         {/* Step 5: Resources */}
         {step === 5 && (
           <div>
-            <div className="font-semibold" style={{ marginBottom: 4 }}>Resources You Can Offer</div>
+            <h2 className="font-semibold" style={{ marginBottom: 4 }}>Resources You Can Offer</h2>
             <div className="text-sm text-muted" style={{ marginBottom: 16 }}>
               Block captains use this to route tasks to the right helpers.
             </div>
-            <div className="checkbox-group">
-              {RESOURCE_OPTIONS.map(({ key, label }) => (
-                <label key={key} className="checkbox-item">
-                  <input type="checkbox" checked={!!form.resources[key]} onChange={() => toggleResource(key)} />
-                  {label}
-                </label>
-              ))}
-            </div>
+            <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+              <legend className="form-label" style={{ marginBottom: 8 }}>Available resources</legend>
+              <div className="checkbox-group">
+                {RESOURCE_OPTIONS.map(({ key, label }) => (
+                  <label key={key} className="checkbox-item">
+                    <input type="checkbox" checked={!!form.resources[key]} onChange={() => toggleResource(key)} />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
           </div>
         )}
 
